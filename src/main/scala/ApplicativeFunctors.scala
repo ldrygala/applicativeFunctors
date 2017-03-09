@@ -1,7 +1,7 @@
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object ApplicativeFunctors extends App {
 
@@ -9,22 +9,25 @@ object ApplicativeFunctors extends App {
 
   case class Order(id: Int, totalCost: Double)
 
+  case class Delivery(cost: Double)
+
   import cats._
   import cats.implicits._
 
-  val afterDiscount = (order: Order, voucher: Voucher) => {
-    order.totalCost - voucher.discount
+  val afterDiscount = (order: Order, delivery: Delivery, voucher: Voucher) => {
+    order.totalCost - voucher.discount + delivery.cost
   }
 
-  def toPay[F[_] : Apply](orderF: F[Order], voucherF: F[Voucher]): F[Double] = {
+  def toPay[F[_] : Apply](orderF: F[Order], delivery: Delivery, voucherF: F[Voucher]): F[Double] = {
     val voucherFunction = orderF.map(afterDiscount.curried)
-    voucherFunction.ap(voucherF)
+    voucherFunction.ap(delivery).ap(voucherF)
   }
 
   val voucher = Voucher(10)
+  val delivery = Delivery(5)
   val order = Order(1, 100)
 
-  println(toPay(Option(order), Option(voucher)))
-  println(toPay(Try(order), Failure[Voucher](new Exception("Boom"))))
-  println(toPay(Future.failed[Order](new Exception("Boom")), Future.successful(voucher)))
+  println(toPay(Option(order), delivery, Option(voucher)))
+  println(toPay(Try(order), delivery, Failure[Voucher](new Exception("Boom"))))
+  println(toPay(Future.failed[Order](new Exception("Boom")), delivery, Future.successful(voucher)))
 }
