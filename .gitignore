@@ -7,6 +7,7 @@ reated by https://www.gitignore.io/api/scala,intellij+iml,sbt
 # User-specific stuff:
 .idea/**/workspace.xml
 .idea/**/tasks.xml
+.idea
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
