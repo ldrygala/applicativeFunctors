@@ -19,9 +19,7 @@ object ApplicativeFunctors extends App {
   }
 
   def toPay[F[_] : Applicative](orderF: F[Order], delivery: Delivery, voucherF: F[Voucher]): F[Double] = {
-    val deliveryVoucherFunction = orderF.map(afterDiscount.curried)
-
-    deliveryVoucherFunction.ap(delivery.pure[F]).ap(voucherF) //Applicative[F].map3(orderF,delivery.pure,voucherF)(afterDiscount)
+     Applicative[F].map3(orderF,delivery.pure[F],voucherF)(afterDiscount)
   }
 
   val voucher = Voucher(10)
