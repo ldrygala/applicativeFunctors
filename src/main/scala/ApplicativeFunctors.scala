@@ -18,14 +18,16 @@ object ApplicativeFunctors extends App {
     order.totalCost - voucher.discount + delivery.cost
   }
 
-  def toPay[F[_] : Apply](orderF: F[Order], delivery: Delivery, voucherF: F[Voucher]): F[Double] = {
-    val voucherFunction = orderF.map(afterDiscount.curried)
-    voucherFunction.ap(delivery).ap(voucherF)
+  def toPay[F[_] : Applicative](orderF: F[Order], delivery: Delivery, voucherF: F[Voucher]): F[Double] = {
+    val deliveryVoucherFunction = orderF.map(afterDiscount.curried)
+
+    deliveryVoucherFunction.ap(delivery.pure[F]).ap(voucherF) //Applicative[F].map3(orderF,delivery.pure,voucherF)(afterDiscount)
   }
 
   val voucher = Voucher(10)
   val delivery = Delivery(5)
   val order = Order(1, 100)
+
 
   println(toPay(Option(order), delivery, Option(voucher)))
   println(toPay(Try(order), delivery, Failure[Voucher](new Exception("Boom"))))
