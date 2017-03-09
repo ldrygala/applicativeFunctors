@@ -1,6 +1,7 @@
-import cats.Applicative
 import cats.data.Validated.{Invalid, Valid}
-import cats.data.{Validated, ValidatedNel}
+import cats.data.ValidatedNel
+
+import scala.util.Try
 
 /**
   * Created by lukasz.drygala on 09/03/17.
@@ -13,23 +14,23 @@ object ValidatedExample extends App {
 
   def validLogin(login: String) = {
     if (login.split(".").length == 2)
-      login.validNel
+      login.asRight
     else
-      "login should have firstName.secondName format".invalidNel
+      "login should have firstName.secondName format".asLeft
   }
 
   def validPassword(password: String) = {
     if (password.length > 5)
-      password.validNel
+      password.asRight
     else
-      "password should have more then 5 characters".invalidNel
+      "password should have more then 5 characters".asLeft
   }
 
   def validAge(age: String) = {
-    Validated.catchNonFatal(age.toInt)
-      .leftMap(_ => "not a number")
-      .ensure("to play you should have more then 10 years")(_ > 10)
-      .toValidatedNel
+    Either
+      .fromTry(Try(age.toInt))
+      .left.map(_ => "not a number")
+      .flatMap(age => if (age > 10) age.asRight else "to play you should have more then 10 years".asLeft)
   }
 
   println("Enter login: ")
@@ -41,12 +42,15 @@ object ValidatedExample extends App {
 
   type V[A] = ValidatedNel[String, A]
 
-  val validatedUser = Applicative[V].map3(validLogin(login), validPassword(password), validAge(age))(User)
-//  val validatedUser = (validLogin(login) |@| validPassword(password) |@| validAge(age)).map(User)
+  //  val validatedUser = Applicative[V].map3(validLogin(login), validPassword(password), validAge(age))(User)
+  //  val validatedUser = (validLogin(login) |@| validPassword(password) |@| validAge(age)).map(User)
 
-  validatedUser match {
-    case Valid(user) => println(s"created $user")
-    case Invalid(errors) => println(s"please fix: ${errors.toList.mkString("\n", "\n", "\n")}")
-  }
+  val validatedUser = for {
+    l <- validLogin(login)
+    p <- validPassword(password)
+    a <- validAge(age)
+  } yield User(l,p,a)
+
+  println(validatedUser)
 
 }
